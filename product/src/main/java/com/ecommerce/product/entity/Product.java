@@ -1,0 +1,35 @@
+package com.ecommerce.product.entity;
+
+import jakarta.persistence.*;
+import java.math.BigDecimal;
+import lombok.*;
+
+@Entity
+@Table(
+    name = "products",
+    uniqueConstraints = @UniqueConstraint(name = "uk_product_name", columnNames = "name"))
+@Data
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class Product {
+
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
+
+  @Column(unique = true, nullable = false)
+  private String name;
+
+  private String description;
+
+  @Column(nullable = false)
+  private BigDecimal price;
+
+  @Column(nullable = false)
+  private Integer quantity;
+
+  private String category;
+}

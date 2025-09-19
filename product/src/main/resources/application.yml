@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: product
+  datasource:
+    url: jdbc:mysql://localhost:3306/product_db
+    username: root
+    password: MySQL%4243
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        show_sql: true
+  profiles:
+    active: dev
+
+server:
+  port: 8081
+
+eureka:
+  client:
+    service-url:
+      defaultZone:
+        http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  health:
+    readiness-state:
+      enabled: true
+    liveness-state:
+      enabled: true
+  endpoint:
+    shutdown:
+      enabled: true
+    health:
+      probes:
+        enabled: true
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: "product"
+    description: "product microservice"
+    version: "1.0.0"
