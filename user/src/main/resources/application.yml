@@ -13,7 +13,7 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
         show_sql: true
   config:
-    import: "optional:configserver:http://localhost:8888"
+    import: "optional:configserver:http://${CONFIG_SERVER_HOST:localhost}:8888"
   profiles:
     active: dev
 
