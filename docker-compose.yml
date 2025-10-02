@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+
+  eureka-server:
+    build: ./eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - ecommerce-net
+
+  config-server:
+    build: ./config-server
+    ports:
+      - "8888:8888"
+    networks:
+      - ecommerce-net
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - eureka-server
+    networks:
+      - ecommerce-net
+
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      - eureka-server
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/user_auth_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: MySQL%4243
+    networks:
+      - ecommerce-net
+
+  user:
+    build: ./user
+    ports:
+      - "8082:8082"
+    depends_on:
+      - eureka-server
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/user_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: MySQL%4243
+    networks:
+      - ecommerce-net
+
+  product:
+    build: ./product
+    ports:
+      - "8083:8083"
+    depends_on:
+      - eureka-server
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/product_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: MySQL%4243
+    networks:
+      - ecommerce-net
+
+  cart:
+    build: ./cart
+    ports:
+      - "8084:8084"
+    depends_on:
+      - eureka-server
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/cart_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: MySQL%4243
+    networks:
+      - ecommerce-net
+
+  order:
+    build: ./order
+    ports:
+      - "8085:8085"
+    depends_on:
+      - eureka-server
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/order_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: MySQL%4243
+    networks:
+      - ecommerce-net
+
+networks:
+  ecommerce-net:
+    driver: bridge
