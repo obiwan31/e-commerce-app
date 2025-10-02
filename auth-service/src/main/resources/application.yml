@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: auth-service
+  datasource:
+    url: jdbc:mysql://localhost:3306/user_auth_db
+    username: root
+    password: MySQL%4243
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        show_sql: true
+  profiles:
+    active: dev
+  config:
+    import: "optional:configserver:http://localhost:8888"
+
+server:
+  port: 8081
+
+info:
+  app:
+    name: "auth-service"
+    description: "auth-service microservice"
+    version: "1.0.0"

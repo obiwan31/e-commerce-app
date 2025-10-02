@@ -1,7 +1,5 @@
 package com.ecommerce.order.service;
 
-import com.ecommerce.order.client.CartServiceClient;
-import com.ecommerce.order.client.ProductServiceClient;
 import com.ecommerce.order.dto.OrderItemDto;
 import com.ecommerce.order.dto.OrderRequestDto;
 import com.ecommerce.order.dto.OrderResponseDto;
@@ -11,34 +9,39 @@ import com.ecommerce.order.entity.OrderItem;
 import com.ecommerce.order.model.CartDto;
 import com.ecommerce.order.model.ProductDto;
 import com.ecommerce.order.repository.OrderRepository;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 @Service
 public class OrderServiceImpl implements OrderService {
+  private final Logger LOGGER = LoggerFactory.getLogger(OrderServiceImpl.class);
 
   private final OrderRepository orderRepository;
-  private final CartServiceClient cartServiceClient;
-  private final ProductServiceClient productServiceClient;
+  private final CartClientService cartClientService;
+  private final ProductClientService productClientService;
 
   public OrderServiceImpl(
       OrderRepository orderRepository,
-      CartServiceClient cartServiceClient,
-      ProductServiceClient productServiceClient) {
+      CartClientService cartClientService,
+      ProductClientService productClientService) {
     this.orderRepository = orderRepository;
-    this.cartServiceClient = cartServiceClient;
-    this.productServiceClient = productServiceClient;
+    this.cartClientService = cartClientService;
+    this.productClientService = productClientService;
   }
 
+  @RateLimiter(name = "orderRateLimiter", fallbackMethod = "fallback")
   @Override
   public ResponseEntity<OrderResponseDto> placeOrder(OrderRequestDto request) {
-    List<CartDto> cartItems = cartServiceClient.getCartDetails(request.getUserId());
+    List<CartDto> cartItems = cartClientService.getCartDetails(request.getUserId());
 
     if (cartItems == null || cartItems.isEmpty()) {
       return ResponseEntity.badRequest().body(null); // or custom error
@@ -48,14 +51,14 @@ public class OrderServiceImpl implements OrderService {
     BigDecimal total = BigDecimal.ZERO;
 
     for (CartDto cartItem : cartItems) {
-      ProductDto product = productServiceClient.getProduct(cartItem.getProductId());
+      ProductDto product = productClientService.getProduct(cartItem.getProductId());
 
       if (product.getQuantity() < cartItem.getQuantity()) {
         return new ResponseEntity<>(HttpStatus.PRECONDITION_FAILED);
       }
 
       product.setQuantity(product.getQuantity() - cartItem.getQuantity());
-      productServiceClient.updateProduct(cartItem.getProductId(), product);
+      productClientService.updateProduct(cartItem.getProductId(), product);
 
       OrderItem orderItem = new OrderItem();
       orderItem.setProductId(cartItem.getProductId());
@@ -76,7 +79,7 @@ public class OrderServiceImpl implements OrderService {
     orderItems.forEach(orderItem -> orderItem.setOrder(order));
 
     Order savedOrder = orderRepository.save(order);
-    cartServiceClient.deleteCart(request.getUserId());
+    cartClientService.deleteCart(request.getUserId());
 
     List<OrderItemDto> itemDtos =
         orderItems.stream()
@@ -99,6 +102,17 @@ public class OrderServiceImpl implements OrderService {
             .build();
 
     return ResponseEntity.ok(responseDto);
+  }
+
+  public ResponseEntity<OrderResponseDto> fallback(OrderRequestDto request, Throwable throwable) {
+    LOGGER.warn("Fallback triggered for placeOrder due to {}", throwable.getMessage());
+
+    // Return meaningful fallback response
+    OrderResponseDto fallbackResponse = OrderResponseDto.builder().build();
+    fallbackResponse.setMessage("Service is busy. Please try again later.");
+    fallbackResponse.setOrderStatus("FAILED");
+
+    return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(fallbackResponse);
   }
 
   @Override

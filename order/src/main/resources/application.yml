@@ -14,47 +14,11 @@ spring:
         show_sql: true
   profiles:
     active: dev
+  config:
+    import: "optional:configserver:http://localhost:8888"
 
-feign:
-  client:
-    config:
-      default:
-        loggerLevel: full
-        connectTimeout: 5000
-        readTimeout: 10000
-  httpclient:
-    enabled: true
-    
 server:
-  port: 8083
-
-eureka:
-  client:
-    service-url:
-      defaultZone:
-        http://localhost:8761/eureka/
-    register-with-eureka: true
-    fetch-registry: true
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "*"
-  health:
-    readiness-state:
-      enabled: true
-    liveness-state:
-      enabled: true
-  endpoint:
-    shutdown:
-      enabled: true
-    health:
-      probes:
-        enabled: true
-  info:
-    env:
-      enabled: true
+  port: 8085
 
 info:
   app:
@@ -62,7 +26,14 @@ info:
     description: "order microservice"
     version: "1.0.0"
 
-logging:
-  level:
-    org.springframework.cloud.openfeign: DEBUG
-    com.netflix.discovery: DEBUG
+resilience4j:
+  ratelimiter:
+    instances:
+      productRateLimiter:
+        limitForPeriod: 5
+        limitRefreshPeriod: 10s
+        timeoutDuration: 1s
+      cartRateLimiter:
+        limitForPeriod: 5
+        limitRefreshPeriod: 10s
+        timeoutDuration: 1s

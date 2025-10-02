@@ -1,0 +1,94 @@
+spring:
+  application:
+    name: api-gateway
+  config:
+    import: "optional:configserver:http://localhost:8888"
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: auth-service
+              uri: lb://AUTH-SERVICE
+              predicates:
+                - Path=/auth/**
+              filters:
+                - name: Retry
+                  args:
+                    retries: 3
+                    statuses: BAD_GATEWAY, INTERNAL_SERVER_ERROR
+#                - name: CircuitBreaker
+#                  args:
+#                    name: myCircuitBreaker
+#                    fallbackUri: forward:/fallback
+
+            - id: user
+              uri: lb://USER
+              predicates:
+                - Path=/users/**
+              filters:
+                - name: Retry
+                  args:
+                    retries: 3
+                    statuses: BAD_GATEWAY, INTERNAL_SERVER_ERROR
+#                - name: CircuitBreaker
+#                  args:
+#                    name: myCircuitBreaker
+#                    fallbackUri: forward:/fallback
+
+            - id: product
+              uri: lb://PRODUCT
+              predicates:
+                - Path=/products/**
+              filters:
+                - name: Retry
+                  args:
+                    retries: 3
+                    statuses: BAD_GATEWAY, INTERNAL_SERVER_ERROR
+#                - name: CircuitBreaker
+#                  args:
+#                    name: myCircuitBreaker
+#                    fallbackUri: forward:/fallback
+
+            - id: cart
+              uri: lb://CART
+              predicates:
+                - Path=/carts/**
+              filters:
+                - name: Retry
+                  args:
+                    retries: 3
+                    statuses: BAD_GATEWAY, INTERNAL_SERVER_ERROR
+#                - name: CircuitBreaker
+#                  args:
+#                    name: myCircuitBreaker
+#                    fallbackUri: forward:/fallback
+
+            - id: order
+              uri: lb://ORDER
+              predicates:
+                - Path=/orders/**
+              filters:
+                - name: Retry
+                  args:
+                    retries: 3
+                    statuses: BAD_GATEWAY, INTERNAL_SERVER_ERROR
+#                - name: CircuitBreaker
+#                  args:
+#                    name: myCircuitBreaker
+#                    fallbackUri: forward:/fallback
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      myCircuitBreaker:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+
+server:
+  port: 8080

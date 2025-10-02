@@ -3,6 +3,7 @@ package com.ecommerce.product.controller;
 import com.ecommerce.product.dto.ProductDto;
 import com.ecommerce.product.service.ProductService;
 import java.util.List;
+import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,12 +34,14 @@ public class ProductController {
   }
 
   @GetMapping
-  public ResponseEntity<List<ProductDto>> getAllProducts() {
+  public ResponseEntity<List<ProductDto>> getAllProducts(
+      @RequestHeader Map<String, String> headers) {
     return productService.getAllProducts();
   }
 
   @DeleteMapping("/{productId}")
-  public ResponseEntity<String> deleteProduct(@PathVariable("productId") Long id) {
+  public ResponseEntity<String> deleteProduct(
+      @PathVariable("productId") Long id, @RequestHeader Map<String, String> headers) {
     return productService.deleteProduct(id);
   }
 }

@@ -14,4 +14,7 @@ public class OrderResponseDto {
   private String status;
   private BigDecimal total;
   private List<OrderItemDto> items;
+
+  private String message;
+  private String orderStatus;
 }

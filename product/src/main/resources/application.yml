@@ -14,37 +14,11 @@ spring:
         show_sql: true
   profiles:
     active: dev
+  config:
+    import: "optional:configserver:http://localhost:8888"
 
 server:
-  port: 8081
-
-eureka:
-  client:
-    service-url:
-      defaultZone:
-        http://localhost:8761/eureka/
-    register-with-eureka: true
-    fetch-registry: true
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "*"
-  health:
-    readiness-state:
-      enabled: true
-    liveness-state:
-      enabled: true
-  endpoint:
-    shutdown:
-      enabled: true
-    health:
-      probes:
-        enabled: true
-  info:
-    env:
-      enabled: true
+  port: 8083
 
 info:
   app:

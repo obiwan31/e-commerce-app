@@ -7,6 +7,7 @@ import lombok.*;
 @Table(
     name = "users",
     uniqueConstraints = {
+      @UniqueConstraint(name = "uk_user_username", columnNames = "username"),
       @UniqueConstraint(name = "uk_user_email", columnNames = "email"),
       @UniqueConstraint(name = "uk_user_mobileNumber", columnNames = "mobileNumber")
     })
@@ -23,6 +24,9 @@ public class User {
   private Long id;
 
   private String name;
+
+  @Column(unique = true, nullable = false)
+  private String username;
 
   private int age;
 

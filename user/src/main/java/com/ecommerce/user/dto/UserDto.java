@@ -1,14 +1,19 @@
 package com.ecommerce.user.dto;
 
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class UserRequest {
+@Builder
+public class UserDto {
 
   private String name;
+  private String username;
+  private String password;
   private int age;
   private String mobileNumber;
   private String email;
+  private String role;
 }

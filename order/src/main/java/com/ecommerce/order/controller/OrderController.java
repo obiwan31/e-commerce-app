@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequestMapping("/orders")
 public class OrderController {
 
   private final OrderService orderService;
@@ -17,17 +18,17 @@ public class OrderController {
     this.orderService = orderService;
   }
 
-  @PostMapping("/order")
+  @PostMapping
   public ResponseEntity<OrderResponseDto> placeOrder(@RequestBody OrderRequestDto orderRequestDto) {
     return orderService.placeOrder(orderRequestDto);
   }
 
-  @GetMapping("/orders/{orderId}")
+  @GetMapping("/{orderId}")
   public ResponseEntity<OrderResponseDto> getOrder(@PathVariable Long orderId) {
     return orderService.getOrder(orderId);
   }
 
-  @GetMapping("/orders/user/{userId}")
+  @GetMapping("/user/{userId}")
   public ResponseEntity<List<OrderSummaryDto>> getOrdersByUser(@PathVariable Long userId) {
     return orderService.getOrdersByUser(userId);
   }
