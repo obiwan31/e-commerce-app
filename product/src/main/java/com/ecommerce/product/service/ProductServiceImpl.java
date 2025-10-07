@@ -1,20 +1,22 @@
 package com.ecommerce.product.service;
 
+import com.ecommerce.product.cache.ProductCache;
 import com.ecommerce.product.dto.ProductDto;
 import com.ecommerce.product.entity.Product;
 import com.ecommerce.product.repository.ProductRepository;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ProductServiceImpl implements ProductService {
 
   private final ProductRepository productRepo;
+  private final ProductCache productCache;
 
-  public ProductServiceImpl(ProductRepository productRepo) {
+  public ProductServiceImpl(ProductRepository productRepo, ProductCache productCache) {
     this.productRepo = productRepo;
+    this.productCache = productCache;
   }
 
   @Override
@@ -33,15 +35,14 @@ public class ProductServiceImpl implements ProductService {
 
   @Override
   public Long updateProduct(Long id, ProductDto productRequest) {
-    Optional<Product> optionalProduct = productRepo.findById(id);
-    if (optionalProduct.isPresent()) {
-      Product product = optionalProduct.get();
+    Product product = productCache.getProduct(id);
+    if (product != null) {
       product.setDescription(productRequest.getDescription());
       product.setPrice(productRequest.getPrice());
       product.setCategory(productRequest.getCategory());
       product.setQuantity(productRequest.getQuantity());
 
-      Product savedProduct = productRepo.save(product);
+      Product savedProduct = productCache.save(product);
       return savedProduct.getId();
     }
     return null;
@@ -49,18 +50,18 @@ public class ProductServiceImpl implements ProductService {
 
   @Override
   public ProductDto getProductById(Long id) {
-    Optional<Product> optionalProduct = productRepo.findById(id);
-    return optionalProduct.map(ProductDto::build).orElse(null);
+    Product product = productCache.getProduct(id);
+    return product != null ? ProductDto.build(product) : null;
   }
 
   @Override
   public List<ProductDto> getAllProducts() {
-    List<Product> products = productRepo.findAll();
+    List<Product> products = productCache.getAllProducts();
     return products.stream().filter(Objects::nonNull).map(ProductDto::build).toList();
   }
 
   @Override
   public void deleteProduct(Long id) {
-    productRepo.deleteById(id);
+    productCache.deleteById(id);
   }
 }
