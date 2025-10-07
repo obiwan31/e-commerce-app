@@ -2,13 +2,10 @@ package com.ecommerce.user.service;
 
 import com.ecommerce.user.client.AuthUserClient;
 import com.ecommerce.user.dto.UserDto;
-import com.ecommerce.user.dto.UserResponse;
 import com.ecommerce.user.entity.User;
 import com.ecommerce.user.repository.UserRepository;
 import java.util.List;
 import java.util.Optional;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -23,7 +20,7 @@ public class UserServiceImpl implements UserService {
   }
 
   @Override
-  public ResponseEntity<UserResponse> registerUser(UserDto userDto) {
+  public Long registerUser(UserDto userDto) {
     User user =
         User.builder()
             .age(userDto.getAge())
@@ -32,33 +29,29 @@ public class UserServiceImpl implements UserService {
             .mobileNumber(userDto.getMobileNumber())
             .email(userDto.getEmail())
             .build();
-    userRepository.save(user);
 
-    // Call Auth-User API to register into JWT login
+    User savedUser = userRepository.save(user);
+
+    // Call Auth-User API to register for JWT login
     authUserClient.registerUser(userDto);
 
-    UserResponse userResponse = new UserResponse();
-    userResponse.setMessage("Hello " + user.getName() + ", Your registration is successful");
-    return ResponseEntity.ok(userResponse);
+    return savedUser.getId();
   }
 
   @Override
-  public ResponseEntity<UserDto> getUser(Long userId) {
+  public UserDto getUser(Long userId) {
     Optional<User> user = userRepository.findById(userId);
-    return user.map(value -> ResponseEntity.ok(this.getUserDto(value)))
-        .orElseGet(() -> new ResponseEntity<>(HttpStatus.NO_CONTENT));
+    return user.map(value -> this.getUserDto(value)).orElse(null);
   }
 
   @Override
-  public ResponseEntity<List<UserDto>> getUsers() {
-    List<UserDto> users = userRepository.findAll().stream().map(this::getUserDto).toList();
-    return ResponseEntity.ok(users);
+  public List<UserDto> getUsers() {
+    return userRepository.findAll().stream().map(this::getUserDto).toList();
   }
 
   @Override
-  public ResponseEntity<String> deleteUser(Long userId) {
+  public void deleteUser(Long userId) {
     userRepository.deleteById(userId);
-    return ResponseEntity.ok("User Deleted!");
   }
 
   private UserDto getUserDto(User user) {

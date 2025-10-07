@@ -4,13 +4,13 @@ import com.ecommerce.order.dto.OrderRequestDto;
 import com.ecommerce.order.dto.OrderResponseDto;
 import com.ecommerce.order.dto.OrderSummaryDto;
 import java.util.List;
-import org.springframework.http.ResponseEntity;
+import java.util.Map;
 
 public interface OrderService {
 
-  ResponseEntity<OrderResponseDto> placeOrder(OrderRequestDto request);
+  OrderResponseDto placeOrder(OrderRequestDto request, Map<String, String> headers);
 
-  ResponseEntity<OrderResponseDto> getOrder(Long orderId);
+  OrderResponseDto getOrder(Long orderId);
 
-  ResponseEntity<List<OrderSummaryDto>> getOrdersByUser(Long userId);
+  List<OrderSummaryDto> getAllOrders(Long userId);
 }

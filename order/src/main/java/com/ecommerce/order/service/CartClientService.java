@@ -5,6 +5,7 @@ import com.ecommerce.order.model.CartDto;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -20,24 +21,22 @@ public class CartClientService {
   }
 
   @RateLimiter(name = "cartRateLimiter", fallbackMethod = "fallbackGetCart")
-  public List<CartDto> getCartDetails(Long userId) {
-    return cartServiceClient.getCartDetails(userId);
+  public List<CartDto> getCartDetails(Map<String, String> headers) {
+    return cartServiceClient.getCartDetails(headers);
   }
 
   @RateLimiter(name = "cartRateLimiter", fallbackMethod = "fallbackDeleteCart")
-  public void deleteCart(Long userId) {
-    cartServiceClient.deleteCart(userId);
+  public void deleteCart(Map<String, String> headers) {
+    cartServiceClient.deleteCart(headers);
   }
 
-  public List<CartDto> fallbackGetCart(Long userId, Throwable t) {
-    LOGGER.error(
-        "Fallback for getCartDetails triggered for userId={} due to {}", userId, t.getMessage());
+  public List<CartDto> fallbackGetCart(Map<String, String> headers, Throwable t) {
+    LOGGER.error("Fallback for getCartDetails triggered due to {}", t.getMessage());
     return Collections.emptyList();
   }
 
-  // Fallback for deleteCart (void return)
-  public void fallbackDeleteCart(Long userId, Throwable t) {
-    LOGGER.warn("Fallback for deleteCart triggered for userId={} due to {}", userId, t.getMessage());
+  public void fallbackDeleteCart(Map<String, String> headers, Throwable t) {
+    LOGGER.warn("Fallback for deleteCart triggered due to {}", t.getMessage());
     // Optionally, you could throw a custom exception or alert here
   }
 }

@@ -6,8 +6,6 @@ import com.ecommerce.product.repository.ProductRepository;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -20,7 +18,7 @@ public class ProductServiceImpl implements ProductService {
   }
 
   @Override
-  public ResponseEntity<String> createProduct(ProductDto productRequest) {
+  public Long createProduct(ProductDto productRequest) {
     Product product =
         Product.builder()
             .name(productRequest.getName())
@@ -29,12 +27,12 @@ public class ProductServiceImpl implements ProductService {
             .price(productRequest.getPrice())
             .category(productRequest.getCategory())
             .build();
-    productRepo.save(product);
-    return ResponseEntity.ok("Product is added");
+    Product savedProduct = productRepo.save(product);
+    return savedProduct.getId();
   }
 
   @Override
-  public ResponseEntity<String> updateProduct(Long id, ProductDto productRequest) {
+  public Long updateProduct(Long id, ProductDto productRequest) {
     Optional<Product> optionalProduct = productRepo.findById(id);
     if (optionalProduct.isPresent()) {
       Product product = optionalProduct.get();
@@ -42,35 +40,27 @@ public class ProductServiceImpl implements ProductService {
       product.setPrice(productRequest.getPrice());
       product.setCategory(productRequest.getCategory());
       product.setQuantity(productRequest.getQuantity());
-      productRepo.save(product);
-      return ResponseEntity.ok("Product is updated");
-    } else {
-      return ResponseEntity.ok("Product does not exist");
+
+      Product savedProduct = productRepo.save(product);
+      return savedProduct.getId();
     }
+    return null;
   }
 
   @Override
-  public ResponseEntity<ProductDto> getProduct(Long id) {
+  public ProductDto getProductById(Long id) {
     Optional<Product> optionalProduct = productRepo.findById(id);
-    if (optionalProduct.isPresent()) {
-      ProductDto dto = ProductDto.build(optionalProduct.get());
-      return ResponseEntity.ok(dto);
-    } else {
-      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-    }
+    return optionalProduct.map(ProductDto::build).orElse(null);
   }
 
   @Override
-  public ResponseEntity<List<ProductDto>> getAllProducts() {
+  public List<ProductDto> getAllProducts() {
     List<Product> products = productRepo.findAll();
-    List<ProductDto> result =
-        products.stream().filter(Objects::nonNull).map(ProductDto::build).toList();
-    return ResponseEntity.ok(result);
+    return products.stream().filter(Objects::nonNull).map(ProductDto::build).toList();
   }
 
   @Override
-  public ResponseEntity<String> deleteProduct(Long id) {
+  public void deleteProduct(Long id) {
     productRepo.deleteById(id);
-    return ResponseEntity.ok("Product has been removed!");
   }
 }
