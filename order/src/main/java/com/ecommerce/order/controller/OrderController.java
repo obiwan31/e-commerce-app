@@ -5,12 +5,15 @@ import com.ecommerce.order.dto.OrderResponseDto;
 import com.ecommerce.order.dto.OrderSummaryDto;
 import com.ecommerce.order.service.OrderService;
 import java.util.List;
+import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/orders")
 public class OrderController {
+
+  private static final String USER_ID = "x-user-id";
 
   private final OrderService orderService;
 
@@ -19,17 +22,27 @@ public class OrderController {
   }
 
   @PostMapping
-  public ResponseEntity<OrderResponseDto> placeOrder(@RequestBody OrderRequestDto orderRequestDto) {
-    return orderService.placeOrder(orderRequestDto);
+  public ResponseEntity<OrderResponseDto> placeOrder(
+      @RequestBody OrderRequestDto orderRequestDto, @RequestHeader Map<String, String> headers) {
+    OrderResponseDto orderResponseDto = orderService.placeOrder(orderRequestDto, headers);
+    return ResponseEntity.ok(orderResponseDto);
   }
 
   @GetMapping("/{orderId}")
   public ResponseEntity<OrderResponseDto> getOrder(@PathVariable Long orderId) {
-    return orderService.getOrder(orderId);
+    OrderResponseDto orderResponseDto = orderService.getOrder(orderId);
+    if (orderResponseDto != null) {
+      return ResponseEntity.ok(orderResponseDto);
+    } else {
+      return ResponseEntity.notFound().build();
+    }
   }
 
-  @GetMapping("/user/{userId}")
-  public ResponseEntity<List<OrderSummaryDto>> getOrdersByUser(@PathVariable Long userId) {
-    return orderService.getOrdersByUser(userId);
+  @GetMapping
+  public ResponseEntity<List<OrderSummaryDto>> getAllOrders(
+      @RequestHeader Map<String, String> headers) {
+    Long userId = Long.valueOf(headers.get(USER_ID));
+    List<OrderSummaryDto> allOrders = orderService.getAllOrders(userId);
+    return ResponseEntity.ok(allOrders);
   }
 }

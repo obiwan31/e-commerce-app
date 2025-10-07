@@ -8,7 +8,6 @@ import lombok.Setter;
 @Setter
 @Builder
 public class CartDto {
-  private Long userId;
   private Long productId;
   private Integer quantity;
 }

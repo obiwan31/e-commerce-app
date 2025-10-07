@@ -4,7 +4,6 @@ import com.ecommerce.cart.dto.CartDto;
 import com.ecommerce.cart.entity.Cart;
 import com.ecommerce.cart.repository.CartRepository;
 import java.util.List;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -17,51 +16,46 @@ public class CartServiceImpl implements CartService {
   }
 
   @Override
-  public ResponseEntity<String> addItem(CartDto cartDto) {
-    Cart cart =
-        cartRepository.findAllByUserIdAndProductId(cartDto.getUserId(), cartDto.getProductId());
+  public Long addItem(CartDto cartDto, Long userId) {
+    Cart cart = cartRepository.findAllByUserIdAndProductId(userId, cartDto.getProductId());
+
     if (cart == null) {
       cart =
           Cart.builder()
-              .userId(cartDto.getUserId())
+              .userId(userId)
               .productId(cartDto.getProductId())
               .quantity(cartDto.getQuantity())
               .build();
     } else {
       cart.setQuantity(cart.getQuantity() + 1);
     }
-    cartRepository.save(cart);
-    return ResponseEntity.ok("Product is added in the cart");
+    Cart savedCart = cartRepository.save(cart);
+    return savedCart.getId();
   }
 
   @Override
-  public ResponseEntity<String> updateQuantity(Long userId, Long productId) {
+  public Long updateQuantity(Long userId, Long productId) {
     Cart cart = cartRepository.findAllByUserIdAndProductId(userId, productId);
     cart.setQuantity(cart.getQuantity() + 1);
-
-    cartRepository.save(cart);
-    return ResponseEntity.ok("Product quantity is updated in the cart");
+    Cart savedCart = cartRepository.save(cart);
+    return savedCart.getId();
   }
 
   @Override
-  public ResponseEntity<List<CartDto>> getCartDetails(Long userId) {
+  public List<CartDto> getCartDetails(Long userId) {
     List<Cart> items = cartRepository.findAllByUserId(userId);
-    List<CartDto> cartDtoList =
-        items.stream()
-            .map(
-                item ->
-                    CartDto.builder()
-                        .productId(item.getProductId())
-                        .userId(item.getUserId())
-                        .quantity(item.getQuantity())
-                        .build())
-            .toList();
-    return ResponseEntity.ok(cartDtoList);
+    return items.stream()
+        .map(
+            item ->
+                CartDto.builder()
+                    .productId(item.getProductId())
+                    .quantity(item.getQuantity())
+                    .build())
+        .toList();
   }
 
   @Override
-  public ResponseEntity<String> deleteCart(Long userId) {
+  public void deleteCart(Long userId) {
     cartRepository.deleteByUserId(userId);
-    return ResponseEntity.ok("Cart is cleared!");
   }
 }
