@@ -21,13 +21,6 @@ import reactor.core.publisher.Mono;
 @Configuration
 public class SecurityConfig {
 
-  //  @Bean
-  //  public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
-  //    return http.csrf(ServerHttpSecurity.CsrfSpec::disable)
-  //        .authorizeExchange(exchange -> exchange.anyExchange().permitAll())
-  //        .build();
-  //  }
-
   private static final String SECRET_KEY = "m9LpQw7xJZ2tVk6eTwYfA3RcNsHdXp1K";
 
   @Bean

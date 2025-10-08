@@ -1,6 +1,10 @@
 version: '3.8'
 
 services:
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
 
   config-server:
     build: ./config-server
@@ -71,6 +75,7 @@ services:
     environment:
       EUREKA_HOST: eureka-server
       CONFIG_SERVER_HOST: config-server
+      REDIS_HOST: redis
       SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/product_db
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: MySQL%4243
