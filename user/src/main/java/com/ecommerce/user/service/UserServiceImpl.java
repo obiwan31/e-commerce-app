@@ -4,8 +4,10 @@ import com.ecommerce.user.client.AuthUserClient;
 import com.ecommerce.user.dto.UserDto;
 import com.ecommerce.user.entity.User;
 import com.ecommerce.user.repository.UserRepository;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -13,10 +15,15 @@ public class UserServiceImpl implements UserService {
 
   private final AuthUserClient authUserClient;
   private final UserRepository userRepository;
+  private final RedisTemplate<String, Object> redisTemplate;
 
-  public UserServiceImpl(AuthUserClient authUserClient, UserRepository userRepository) {
+  public UserServiceImpl(
+      AuthUserClient authUserClient,
+      UserRepository userRepository,
+      RedisTemplate<String, Object> redisTemplate) {
     this.authUserClient = authUserClient;
     this.userRepository = userRepository;
+    this.redisTemplate = redisTemplate;
   }
 
   @Override
@@ -52,6 +59,14 @@ public class UserServiceImpl implements UserService {
   @Override
   public void deleteUser(Long userId) {
     userRepository.deleteById(userId);
+
+    // add user in cache for 5min to invalidate token
+    String deletedUser = "deletedUser:" + userId;
+    redisTemplate.opsForValue().set(deletedUser, userId, Duration.ofMinutes(5));
+
+    // Blacklist RefreshToken
+    String refreshToken = "refreshToken:" + userId;
+    redisTemplate.delete(refreshToken);
   }
 
   private UserDto getUserDto(User user) {
