@@ -1,48 +1,49 @@
 package com.ecommerce.api_gateway.filter;
 
+import com.ecommerce.api_gateway.service.RedisService;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
-import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 @Component
-public class JwtClaimsHeaderFilter implements GlobalFilter, Ordered {
+public class LoginAttemptFilter implements GlobalFilter, Ordered {
+
+  private final RedisService redisService;
+
+  public LoginAttemptFilter(RedisService redisService) {
+    this.redisService = redisService;
+  }
 
   @Override
   public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
     return ReactiveSecurityContextHolder.getContext()
-        .map(securityContext -> securityContext.getAuthentication())
+        .map(SecurityContext::getAuthentication)
         .flatMap(
             auth -> {
               if (auth instanceof JwtAuthenticationToken jwtAuth) {
                 Jwt jwt = jwtAuth.getToken();
-
-                String username = jwt.getSubject();
-                String role = jwt.getClaim("role");
-                String email = jwt.getClaim("email");
                 Long userId = jwt.getClaim("userId");
-
-                ServerHttpRequest mutatedRequest =
-                    exchange
-                        .getRequest()
-                        .mutate()
-                        .header("x-user-name", username)
-                        .header("x-user-email", email)
-                        .header("x-user-id", String.valueOf(userId))
-                        .header("x-role", role)
-                        .build();
-
-                ServerWebExchange mutatedExchange =
-                    exchange.mutate().request(mutatedRequest).build();
-                return chain.filter(mutatedExchange);
+                return redisService
+                    .hasLoginAttemptExceeded(userId)
+                    .flatMap(
+                        hasExceeded -> {
+                          if (Boolean.TRUE.equals(hasExceeded)) {
+                            return Mono.error(
+                                new ResponseStatusException(
+                                    HttpStatus.TOO_MANY_REQUESTS, "Login attempts exceeded"));
+                          }
+                          return chain.filter(exchange);
+                        });
               }
-
               return chain.filter(exchange);
             })
         // If no authentication present, continue without modification
@@ -51,6 +52,6 @@ public class JwtClaimsHeaderFilter implements GlobalFilter, Ordered {
 
   @Override
   public int getOrder() {
-    return 0; // Runs after security context is set
+    return -1;
   }
 }

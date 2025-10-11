@@ -8,6 +8,7 @@ import com.ecommerce.auth_service.utils.JWTUtil;
 import java.util.Arrays;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -27,10 +28,15 @@ public class SecurityConfig {
 
   private final JWTUtil jwtUtil;
   private final UserDetailsService userDetailsService;
+  private final RedisTemplate<String, Object> redisTemplate;
 
-  public SecurityConfig(JWTUtil jwtUtil, UserDetailsService userDetailsService) {
+  public SecurityConfig(
+      JWTUtil jwtUtil,
+      UserDetailsService userDetailsService,
+      RedisTemplate<String, Object> redisTemplate) {
     this.jwtUtil = jwtUtil;
     this.userDetailsService = userDetailsService;
+    this.redisTemplate = redisTemplate;
   }
 
   @Bean
@@ -58,7 +64,7 @@ public class SecurityConfig {
 
     // Authentication filter responsible for login
     JWTAuthenticationFilter jwtAuthFilter =
-        new JWTAuthenticationFilter(authenticationManager, jwtUtil);
+        new JWTAuthenticationFilter(authenticationManager, jwtUtil, redisTemplate);
 
     // Validation filter for checking JWT in every request
     JwtValidationFilter jwtValidationFilter = new JwtValidationFilter(authenticationManager);
@@ -68,10 +74,8 @@ public class SecurityConfig {
 
     http.authorizeHttpRequests(
             auth ->
-                auth.requestMatchers("/auth/register")
+                auth.requestMatchers("/auth/register", "/auth/users")
                     .permitAll()
-                    .requestMatchers("/auth/users")
-                    .hasRole("USER") // Role
                     .anyRequest()
                     .authenticated())
         .sessionManagement(
