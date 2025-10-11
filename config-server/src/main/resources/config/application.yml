@@ -31,15 +31,6 @@ management:
       enabled: true
     liveness-state:
       enabled: true
-  endpoint:
-    shutdown:
-      enabled: true
-    health:
-      probes:
-        enabled: true
-  info:
-    env:
-      enabled: true
 
 logging:
   level:
