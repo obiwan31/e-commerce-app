@@ -18,11 +18,15 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - ecommerce-net
 
   redis:
     image: redis
     ports:
       - "6379:6379"
+    networks:
+      - ecommerce-net
 
   config-server:
     build: ./config-server
@@ -42,12 +46,6 @@ services:
     depends_on:
       config-server:
         condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8761/actuator/health/readiness" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
     ports:
       - "8761:8761"
     networks:
@@ -60,11 +58,10 @@ services:
     depends_on:
       config-server:
         condition: service_healthy
-      eureka-server:
-        condition: service_healthy
     environment:
       EUREKA_HOST: eureka-server
       CONFIG_SERVER_HOST: config-server
+      REDIS_HOST: redis
     networks:
       - ecommerce-net
 
@@ -75,11 +72,10 @@ services:
     depends_on:
       config-server:
         condition: service_healthy
-      eureka-server:
-        condition: service_healthy
     environment:
       EUREKA_HOST: eureka-server
       CONFIG_SERVER_HOST: config-server
+      REDIS_HOST: redis
       SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/user_auth_db
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: MySQL%4243
@@ -93,11 +89,10 @@ services:
     depends_on:
       config-server:
         condition: service_healthy
-      eureka-server:
-        condition: service_healthy
     environment:
       EUREKA_HOST: eureka-server
       CONFIG_SERVER_HOST: config-server
+      REDIS_HOST: redis
       SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/user_db
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: MySQL%4243
@@ -110,8 +105,6 @@ services:
       - "8083:8083"
     depends_on:
       config-server:
-        condition: service_healthy
-      eureka-server:
         condition: service_healthy
     environment:
       EUREKA_HOST: eureka-server
@@ -130,11 +123,10 @@ services:
     depends_on:
       config-server:
         condition: service_healthy
-      eureka-server:
-        condition: service_healthy
     environment:
       EUREKA_HOST: eureka-server
       CONFIG_SERVER_HOST: config-server
+      REDIS_HOST: redis
       SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/cart_db
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: MySQL%4243
@@ -148,11 +140,10 @@ services:
     depends_on:
       config-server:
         condition: service_healthy
-      eureka-server:
-        condition: service_healthy
     environment:
       EUREKA_HOST: eureka-server
       CONFIG_SERVER_HOST: config-server
+      REDIS_HOST: redis
       SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/order_db
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: MySQL%4243
