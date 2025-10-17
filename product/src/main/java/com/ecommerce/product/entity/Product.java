@@ -10,8 +10,6 @@ import lombok.*;
     name = "products",
     uniqueConstraints = @UniqueConstraint(name = "uk_product_name", columnNames = "name"))
 @Data
-@Getter
-@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder

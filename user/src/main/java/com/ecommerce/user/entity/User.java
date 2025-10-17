@@ -12,8 +12,6 @@ import lombok.*;
       @UniqueConstraint(name = "uk_user_mobileNumber", columnNames = "mobileNumber")
     })
 @Data
-@Getter
-@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
