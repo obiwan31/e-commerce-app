@@ -13,7 +13,6 @@ A backend system for an e-commerce platform.
 ├── eureka-server
 ├── order
 ├── product
-├── redis
 ├── user
 └── docker-compose.yml
 ```
@@ -30,6 +29,7 @@ A backend system for an e-commerce platform.
 - **JWT** for stateless authentication
 - **Docker**
 - **Redis**
+- **Kafka** (for asynchronous communication between services)
 - **Resilience4j** for fault tolerance (circuit breakers, retries)
 
 ---
@@ -47,6 +47,16 @@ A backend system for an e-commerce platform.
 - Used for caching in the Product service.
 - Implements login attempt limiting using Redis TTL.
 - Maintains a JWT blacklist to handle forced logout or deleted users.
+
+---
+
+### 📦 Kafka Integration
+
+- Kafka is used for asynchronous, event-driven communication between services.
+- Implemented a basic event flow:
+    - The Order Service publishes an event when a new order is created.
+    - The Product Service consumes the event to update the inventory.
+- The implementation is kept simple for learning purposes and understanding Kafka fundamentals.
 
 ---
 

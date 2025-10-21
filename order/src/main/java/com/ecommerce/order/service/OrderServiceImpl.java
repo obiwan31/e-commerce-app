@@ -9,6 +9,8 @@ import com.ecommerce.order.entity.OrderItem;
 import com.ecommerce.order.model.CartDto;
 import com.ecommerce.order.model.ProductDto;
 import com.ecommerce.order.repository.OrderRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -19,23 +21,27 @@ import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 public class OrderServiceImpl implements OrderService {
-  private final Logger LOGGER = LoggerFactory.getLogger(OrderServiceImpl.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OrderServiceImpl.class);
 
   private final OrderRepository orderRepository;
   private final CartClientService cartClientService;
   private final ProductClientService productClientService;
+  private final KafkaTemplate<String, String> kafkaTemplate;
 
   public OrderServiceImpl(
       OrderRepository orderRepository,
       CartClientService cartClientService,
-      ProductClientService productClientService) {
+      ProductClientService productClientService,
+      KafkaTemplate<String, String> kafkaTemplate) {
     this.orderRepository = orderRepository;
     this.cartClientService = cartClientService;
     this.productClientService = productClientService;
+    this.kafkaTemplate = kafkaTemplate;
   }
 
   @RateLimiter(name = "orderRateLimiter", fallbackMethod = "fallback")
@@ -61,8 +67,12 @@ public class OrderServiceImpl implements OrderService {
       }
 
       product.setQuantity(product.getQuantity() - cartItem.getQuantity());
-      productClientService.updateProduct(cartItem.getProductId(), product);
 
+      try {
+        publishProductUpdate(cartItem.getProductId(), product);
+      } catch (JsonProcessingException e) {
+        return OrderResponseDto.builder().orderStatus("FAILED").build();
+      }
       OrderItem orderItem = new OrderItem();
       orderItem.setProductId(cartItem.getProductId());
       orderItem.setPrice(product.getPrice());
@@ -104,7 +114,23 @@ public class OrderServiceImpl implements OrderService {
         .build();
   }
 
-  public OrderResponseDto fallback(OrderRequestDto request, Throwable throwable) {
+  private void publishProductUpdate(Long productId, ProductDto product)
+      throws JsonProcessingException {
+    String jsonString = new ObjectMapper().writeValueAsString(product);
+    kafkaTemplate
+        .send("OrderEvent", productId.toString(), jsonString)
+        .whenComplete(
+            (result, ex) -> {
+              if (ex == null) {
+                LOGGER.info("Product update sent for ID {}", productId);
+              } else {
+                LOGGER.error("Failed to send product update for ID {}", productId, ex);
+              }
+            });
+  }
+
+  public OrderResponseDto fallback(
+      OrderRequestDto request, Map<String, String> headers, Throwable throwable) {
     LOGGER.warn("Fallback triggered for placeOrder due to {}", throwable.getMessage());
 
     return OrderResponseDto.builder()

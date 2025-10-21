@@ -16,6 +16,15 @@ spring:
     active: dev
   config:
     import: "optional:configserver:http://${CONFIG_SERVER_HOST:localhost}:8888"
+  kafka:
+    bootstrap-servers: ${KAFKA_HOST:localhost}:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        retries: 3
+        acks: all
+        enable.idempotence: true
 
 server:
   port: 8085

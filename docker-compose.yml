@@ -22,7 +22,7 @@ services:
       CLUSTER_ID: mMmdxat7SDyncFSzLibYow
       KAFKA_LOG_DIRS: /tmp/kraft-storage
     volumes:
-      - ./build/kafka-data:/tmp/kraft-storage
+      - ./kafka-data:/tmp/kraft-storage
     networks:
       - ecommerce-net
 
@@ -55,7 +55,7 @@ services:
     ports:
       - "8888:8888"
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8888/actuator/health/readiness" ]
+      test: [ "CMD", "curl", "-f", "http://localhost:8888/actuator/health" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -132,6 +132,7 @@ services:
       EUREKA_HOST: eureka-server
       CONFIG_SERVER_HOST: config-server
       REDIS_HOST: redis
+      KAFKA_HOST: kafka
       SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/product_db
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: MySQL%4243
@@ -166,6 +167,7 @@ services:
       EUREKA_HOST: eureka-server
       CONFIG_SERVER_HOST: config-server
       REDIS_HOST: redis
+      KAFKA_HOST: kafka
       SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/order_db
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: MySQL%4243

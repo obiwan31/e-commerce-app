@@ -2,13 +2,13 @@ package com.ecommerce.product.dto;
 
 import com.ecommerce.product.entity.Product;
 import java.math.BigDecimal;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ProductDto {
 
   private String name;
