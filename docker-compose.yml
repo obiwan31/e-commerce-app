@@ -84,6 +84,7 @@ services:
       EUREKA_HOST: eureka-server
       CONFIG_SERVER_HOST: config-server
       REDIS_HOST: redis
+      JWT_SECRET: ${JWT_SECRET}
     networks:
       - ecommerce-net
 
@@ -99,8 +100,9 @@ services:
       CONFIG_SERVER_HOST: config-server
       REDIS_HOST: redis
       SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/user_auth_db
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: MySQL%4243
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
     networks:
       - ecommerce-net
 
@@ -116,8 +118,8 @@ services:
       CONFIG_SERVER_HOST: config-server
       REDIS_HOST: redis
       SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/user_db
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: MySQL%4243
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
     networks:
       - ecommerce-net
 
@@ -134,8 +136,8 @@ services:
       REDIS_HOST: redis
       KAFKA_HOST: kafka
       SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/product_db
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: MySQL%4243
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
     networks:
       - ecommerce-net
 
@@ -151,8 +153,8 @@ services:
       CONFIG_SERVER_HOST: config-server
       REDIS_HOST: redis
       SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/cart_db
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: MySQL%4243
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
     networks:
       - ecommerce-net
 
@@ -169,8 +171,8 @@ services:
       REDIS_HOST: redis
       KAFKA_HOST: kafka
       SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/order_db
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: MySQL%4243
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
     networks:
       - ecommerce-net
 

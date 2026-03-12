@@ -1,2 +1,4 @@
 /kafka-data/
 /redis-data/
+.env
+.env.local

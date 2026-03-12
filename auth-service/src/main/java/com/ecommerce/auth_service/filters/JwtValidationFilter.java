@@ -1,6 +1,7 @@
 package com.ecommerce.auth_service.filters;
 
 import com.ecommerce.auth_service.token.JwtAuthenticationToken;
+import com.ecommerce.auth_service.utils.JWTUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,9 +15,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtValidationFilter extends OncePerRequestFilter {
 
   private final AuthenticationManager authenticationManager;
+  private final JWTUtil jwtUtil;
 
-  public JwtValidationFilter(AuthenticationManager authenticationManager) {
+  public JwtValidationFilter(AuthenticationManager authenticationManager, JWTUtil jwtUtil) {
     this.authenticationManager = authenticationManager;
+    this.jwtUtil = jwtUtil;
   }
 
   @Override
@@ -30,6 +33,10 @@ public class JwtValidationFilter extends OncePerRequestFilter {
     }
 
     if (token != null) {
+      if (!jwtUtil.isTokenType(token, JWTUtil.TOKEN_TYPE_ACCESS)) {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        return;
+      }
       JwtAuthenticationToken jwtAuthenticationToken = new JwtAuthenticationToken(token);
       Authentication authentication = authenticationManager.authenticate(jwtAuthenticationToken);
       if (authentication.isAuthenticated()) {

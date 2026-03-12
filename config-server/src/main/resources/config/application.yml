@@ -8,7 +8,7 @@ feign:
   client:
     config:
       default:
-        loggerLevel: full
+        loggerLevel: BASIC
         connectTimeout: 5000
         readTimeout: 10000
   httpclient:
@@ -25,7 +25,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: health,info
   health:
     readiness-state:
       enabled: true
@@ -34,6 +34,6 @@ management:
 
 logging:
   level:
-    org.springframework.cloud.openfeign: DEBUG
-    com.netflix.discovery: DEBUG
-    io.github.resilience4j.circuitbreaker: DEBUG
+    org.springframework.cloud.openfeign: INFO
+    com.netflix.discovery: INFO
+    io.github.resilience4j.circuitbreaker: INFO

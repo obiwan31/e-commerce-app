@@ -3,6 +3,10 @@ spring:
     name: api-gateway
   config:
     import: "optional:configserver:http://${CONFIG_SERVER_HOST:localhost}:8888"
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 
   cloud:
     gateway:
@@ -14,6 +18,12 @@ spring:
               predicates:
                 - Path=/auth/**
               filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@userOrIpKeyResolver}"
+                    redis-rate-limiter.replenishRate: 5
+                    redis-rate-limiter.burstCapacity: 10
+                    redis-rate-limiter.requestedTokens: 1
                 - name: Retry
                   args:
                     retries: 3
@@ -28,6 +38,12 @@ spring:
               predicates:
                 - Path=/users/**
               filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@userOrIpKeyResolver}"
+                    redis-rate-limiter.replenishRate: 20
+                    redis-rate-limiter.burstCapacity: 40
+                    redis-rate-limiter.requestedTokens: 1
                 - name: Retry
                   args:
                     retries: 3
@@ -42,6 +58,12 @@ spring:
               predicates:
                 - Path=/products/**
               filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@userOrIpKeyResolver}"
+                    redis-rate-limiter.replenishRate: 30
+                    redis-rate-limiter.burstCapacity: 60
+                    redis-rate-limiter.requestedTokens: 1
                 - name: Retry
                   args:
                     retries: 3
@@ -56,6 +78,12 @@ spring:
               predicates:
                 - Path=/carts/**
               filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@userOrIpKeyResolver}"
+                    redis-rate-limiter.replenishRate: 20
+                    redis-rate-limiter.burstCapacity: 40
+                    redis-rate-limiter.requestedTokens: 1
                 - name: Retry
                   args:
                     retries: 3
@@ -70,6 +98,12 @@ spring:
               predicates:
                 - Path=/orders/**
               filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@userOrIpKeyResolver}"
+                    redis-rate-limiter.replenishRate: 15
+                    redis-rate-limiter.burstCapacity: 30
+                    redis-rate-limiter.requestedTokens: 1
                 - name: Retry
                   args:
                     retries: 3
@@ -78,6 +112,41 @@ spring:
 #                  args:
 #                    name: myCircuitBreaker
 #                    fallbackUri: forward:/fallback
+
+            - id: auth-service-docs
+              uri: lb://AUTH-SERVICE
+              predicates:
+                - Path=/v3/api-docs/auth-service
+              filters:
+                - RewritePath=/v3/api-docs/auth-service, /v3/api-docs
+
+            - id: user-service-docs
+              uri: lb://USER
+              predicates:
+                - Path=/v3/api-docs/user-service
+              filters:
+                - RewritePath=/v3/api-docs/user-service, /v3/api-docs
+
+            - id: product-service-docs
+              uri: lb://PRODUCT
+              predicates:
+                - Path=/v3/api-docs/product-service
+              filters:
+                - RewritePath=/v3/api-docs/product-service, /v3/api-docs
+
+            - id: cart-service-docs
+              uri: lb://CART
+              predicates:
+                - Path=/v3/api-docs/cart-service
+              filters:
+                - RewritePath=/v3/api-docs/cart-service, /v3/api-docs
+
+            - id: order-service-docs
+              uri: lb://ORDER
+              predicates:
+                - Path=/v3/api-docs/order-service
+              filters:
+                - RewritePath=/v3/api-docs/order-service, /v3/api-docs
 
 resilience4j:
   circuitbreaker:
@@ -93,7 +162,49 @@ resilience4j:
 server:
   port: 8080
 
+security:
+  jwt:
+    secret: ${JWT_SECRET}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+  tracing:
+    sampling:
+      probability: 1.0
+
 logging:
+  pattern:
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} level=%-5p service=${spring.application.name} traceId=%X{traceId:-} spanId=%X{spanId:-} correlationId=%X{correlationId:-} thread=%t logger=%logger{36} msg=%m%n"
   level:
-    org.springframework.cloud.gateway: DEBUG
-    org.springframework.security: DEBUG
+    org.springframework.cloud.gateway: INFO
+    org.springframework.security: INFO
+
+info:
+  app:
+    name: "api-gateway"
+    description: "api-gateway swagger aggregation"
+    version: "1.0.0"
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    disable-swagger-default-url: true
+    urls:
+      - name: auth-service
+        url: /v3/api-docs/auth-service
+      - name: user-service
+        url: /v3/api-docs/user-service
+      - name: product-service
+        url: /v3/api-docs/product-service
+      - name: cart-service
+        url: /v3/api-docs/cart-service
+      - name: order-service
+        url: /v3/api-docs/order-service

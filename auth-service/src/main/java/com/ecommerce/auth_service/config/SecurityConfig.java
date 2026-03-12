@@ -1,11 +1,13 @@
 package com.ecommerce.auth_service.config;
 
 import com.ecommerce.auth_service.authenticationProvider.JWTAuthenticationProvider;
+import com.ecommerce.auth_service.filters.AuthRateLimitFilter;
 import com.ecommerce.auth_service.filters.JWTAuthenticationFilter;
 import com.ecommerce.auth_service.filters.JWTRefreshFilter;
 import com.ecommerce.auth_service.filters.JwtValidationFilter;
 import com.ecommerce.auth_service.utils.JWTUtil;
 import java.util.Arrays;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -29,14 +31,23 @@ public class SecurityConfig {
   private final JWTUtil jwtUtil;
   private final UserDetailsService userDetailsService;
   private final RedisTemplate<String, Object> redisTemplate;
+  private final long accessTokenMinutes;
+  private final long refreshTokenMinutes;
+  private final boolean refreshCookieSecure;
 
   public SecurityConfig(
       JWTUtil jwtUtil,
       UserDetailsService userDetailsService,
-      RedisTemplate<String, Object> redisTemplate) {
+      RedisTemplate<String, Object> redisTemplate,
+      @Value("${security.jwt.access-token-minutes:5}") long accessTokenMinutes,
+      @Value("${security.jwt.refresh-token-minutes:10080}") long refreshTokenMinutes,
+      @Value("${security.jwt.refresh-cookie-secure:true}") boolean refreshCookieSecure) {
     this.jwtUtil = jwtUtil;
     this.userDetailsService = userDetailsService;
     this.redisTemplate = redisTemplate;
+    this.accessTokenMinutes = accessTokenMinutes;
+    this.refreshTokenMinutes = refreshTokenMinutes;
+    this.refreshCookieSecure = refreshCookieSecure;
   }
 
   @Bean
@@ -64,23 +75,45 @@ public class SecurityConfig {
 
     // Authentication filter responsible for login
     JWTAuthenticationFilter jwtAuthFilter =
-        new JWTAuthenticationFilter(authenticationManager, jwtUtil, redisTemplate);
+        new JWTAuthenticationFilter(
+            authenticationManager,
+            jwtUtil,
+            redisTemplate,
+            accessTokenMinutes,
+            refreshTokenMinutes,
+            refreshCookieSecure);
 
     // Validation filter for checking JWT in every request
-    JwtValidationFilter jwtValidationFilter = new JwtValidationFilter(authenticationManager);
+    JwtValidationFilter jwtValidationFilter = new JwtValidationFilter(authenticationManager, jwtUtil);
 
     // refresh filter for checking JWT in every request
-    JWTRefreshFilter jwtRefreshFilter = new JWTRefreshFilter(authenticationManager, jwtUtil);
+    JWTRefreshFilter jwtRefreshFilter =
+        new JWTRefreshFilter(
+            authenticationManager,
+            jwtUtil,
+            redisTemplate,
+            accessTokenMinutes,
+            refreshTokenMinutes,
+            refreshCookieSecure);
+    AuthRateLimitFilter authRateLimitFilter = new AuthRateLimitFilter();
 
     http.authorizeHttpRequests(
             auth ->
-                auth.requestMatchers("/auth/register", "/auth/users")
+                auth.requestMatchers(
+                        "/auth/register",
+                        "/auth/users",
+                        "/auth/generate-token",
+                        "/auth/refresh-token",
+                        "/swagger-ui.html",
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**")
                     .permitAll()
                     .anyRequest()
                     .authenticated())
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .csrf(AbstractHttpConfigurer::disable)
+        .addFilterBefore(authRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
         .addFilterBefore(
             jwtAuthFilter, UsernamePasswordAuthenticationFilter.class) // generate token filter
         .addFilterAfter(jwtValidationFilter, JWTAuthenticationFilter.class) // validate token filter

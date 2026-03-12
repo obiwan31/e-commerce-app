@@ -3,6 +3,7 @@ package com.ecommerce.user.service;
 import com.ecommerce.user.client.AuthUserClient;
 import com.ecommerce.user.dto.UserDto;
 import com.ecommerce.user.entity.User;
+import com.ecommerce.user.exception.NotFoundException;
 import com.ecommerce.user.repository.UserRepository;
 import java.time.Duration;
 import java.util.List;
@@ -48,7 +49,8 @@ public class UserServiceImpl implements UserService {
   @Override
   public UserDto getUser(Long userId) {
     Optional<User> user = userRepository.findById(userId);
-    return user.map(value -> this.getUserDto(value)).orElse(null);
+    return user.map(value -> this.getUserDto(value))
+        .orElseThrow(() -> new NotFoundException("User not found: " + userId));
   }
 
   @Override
@@ -58,6 +60,9 @@ public class UserServiceImpl implements UserService {
 
   @Override
   public void deleteUser(Long userId) {
+    if (!userRepository.existsById(userId)) {
+      throw new NotFoundException("User not found: " + userId);
+    }
     userRepository.deleteById(userId);
 
     // add user in cache for 5min to invalidate token

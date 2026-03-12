@@ -1,89 +1,142 @@
-# e-commerce-app
+# Project Overview
+`e-commerce-app` is a Spring Boot + Spring Cloud microservices backend for core e-commerce workflows: authentication, user management, catalog, cart, and order processing.
 
-A backend system for an e-commerce platform.
+It uses an API Gateway entrypoint, centralized configuration, Eureka-based service discovery, synchronous service-to-service calls (OpenFeign), and Kafka-based asynchronous event processing.
 
-### 📁 Project Structure
+# Architecture
+The system follows a distributed microservice architecture:
 
-```text
-.
-├── api-gateway
-├── auth-service
-├── cart
-├── config-server
-├── eureka-server
-├── order
-├── product
-├── user
-└── docker-compose.yml
-```
+- External traffic enters through `api-gateway`.
+- `eureka-server` provides runtime service discovery.
+- `config-server` provides centralized configuration loading.
+- Domain services (`auth-service`, `user-service`, `product-service`, `cart-service`, `order-service`) are independently deployable.
+- Communication is mixed:
+  - Synchronous HTTP (OpenFeign)
+  - Asynchronous messaging (Kafka)
+- Redis is used for caching, auth state, rate-limiting state, and idempotency support.
 
----
+# Services
+| Service | Module Directory | Default Port | Responsibility |
+|---|---|---:|---|
+| api-gateway | `api-gateway` | 8080 | External entrypoint, JWT validation, RBAC, routing, rate limiting, Swagger aggregation |
+| auth-service | `auth-service` | 8081 | Authentication, access/refresh token issuance, refresh token rotation |
+| user-service | `user` | 8082 | User registration, profile retrieval, account lifecycle |
+| product-service | `product` | 8083 | Product catalog APIs, inventory update on order events |
+| cart-service | `cart` | 8084 | Shopping cart operations |
+| order-service | `order` | 8085 | Order placement, order queries, order event publishing |
+| config-server | `config-server` | 8888 | Centralized externalized configuration |
+| eureka-server | `eureka-server` | 8761 | Service registry and discovery |
 
-### ⚙️ Tech Stack
+# System Architecture
+- API Gateway routing:
+  - `api-gateway` routes `/auth/**`, `/users/**`, `/products/**`, `/carts/**`, `/orders/**`.
+  - Per-route retry and Redis-backed rate limiting are enabled.
+- Eureka service discovery:
+  - Services register themselves and are resolved via `lb://SERVICE-NAME` in gateway/service clients.
+- OpenFeign service communication:
+  - Used for synchronous inter-service API calls where request/response semantics are required.
+- Kafka event-driven messaging:
+  - `order-service` publishes order events.
+  - `product-service` consumes events to apply inventory changes asynchronously.
+- Redis caching and auth state:
+  - Refresh tokens and related auth session state.
+  - Gateway rate-limiter state.
+  - Cache/idempotency keys (including Kafka processing idempotency).
 
-- **Spring Boot 3.5.6**
-- **Spring Cloud 2025.0.0**
-- **Spring Cloud Gateway** for API routing
-- **Eureka** for service discovery
-- **Spring Security** for authentication and route protection
-- **JWT** for stateless authentication
-- **Docker**
-- **Redis**
-- **Kafka** (for asynchronous communication between services)
-- **Resilience4j** for fault tolerance (circuit breakers, retries)
+# Event Flow
+Order to inventory flow:
 
----
+1. `order-service` creates an order and publishes `order.placed.v1` (`OrderPlacedEvent`).
+2. Event payload includes: `eventId`, `eventType`, `occurredAt`, `orderId`, `userId`, `items[]`.
+3. `product-service` consumes the event and updates inventory.
+4. Consumer applies schema/validation checks, retry strategy, DLT handling, and idempotent processing with Redis.
+5. Correlation ID is propagated through headers and logs for traceability.
 
-### 🔐 Security
+# Security
+- JWT authentication:
+  - Tokens are signed using shared secret from `JWT_SECRET` (`security.jwt.secret`).
+  - Gateway validates JWT for protected routes.
+- Refresh token rotation:
+  - Refresh token is rotated on successful refresh.
+  - Token type checks are enforced.
+- Redis token storage:
+  - Refresh token state is stored/validated in Redis.
+  - Prevents stale token reuse and supports invalidation workflows.
+- RBAC enforced at gateway:
+  - Route-level role checks (`USER`, `ADMIN`) are enforced in gateway security config.
 
-- **Spring Security** is configured for route-level protection.
-- Authentication is based on **JWT tokens**, enabling stateless authentication.
-- Sensitive endpoints require a valid JWT token for access.
+# Observability
+- Spring Boot Actuator:
+  - Enabled across services.
+  - Exposed endpoints include: `health`, `info`, `metrics`, `prometheus`.
+- Prometheus metrics:
+  - Metrics endpoint exposed for scraping.
+- Correlation IDs:
+  - `X-Correlation-ID` is propagated across HTTP and Kafka paths.
+- Tracing:
+  - Trace fields (`traceId`, `spanId`, `correlationId`) are included in structured logs.
 
----
+# API Documentation
+Swagger/OpenAPI is exposed through the API Gateway and aggregates all service APIs.
 
-### 🧠 Redis
+- Gateway Swagger UI:
+  - `http://localhost:8080/swagger-ui.html`
+- Service-level docs:
+  - `/v3/api-docs`
+  - `/swagger-ui.html`
 
-- Used for caching in the Product service.
-- Implements login attempt limiting using Redis TTL.
-- Maintains a JWT blacklist to handle forced logout or deleted users.
+# Project Structure
+The repository is organized into domain services plus infrastructure services:
 
----
+- Domain services: `auth-service`, `user`, `product`, `cart`, `order`
+- Infrastructure services: `api-gateway`, `eureka-server`, `config-server`
+- Supporting assets: `docs`, `docker-compose.yml`
 
-### 📦 Kafka Integration
+Each service follows a simple layered package style (`controller`, `service`, `repository`, `dto`, `config`, `exception`), and security-related code is kept in `auth-service` and `api-gateway`.
 
-- Kafka is used for asynchronous, event-driven communication between services.
-- Implemented a basic event flow:
-    - The Order Service publishes an event when a new order is created.
-    - The Product Service consumes the event to update the inventory.
-- The implementation is kept simple for learning purposes and understanding Kafka fundamentals.
-
----
-
-### 🛡️ Resilience Strategy
-
-- Internal service-to-service communication uses **Resilience4j** annotations such as `@Retry`, `@CircuitBreaker`, and
-  `@RateLimiter` to handle downstream failures.
-- External client requests are routed through **Spring Cloud Gateway**, where resilience is managed using:
-    - `Retry`
-    - `CircuitBreaker` (with fallback support)
-
-- **Gateway filters** are defined in `application.yml` with custom circuit breaker configurations.
-- **Internal service calls bypass the Gateway**, avoiding redundant retries and clearly separating internal and external
-  resilience handling.
-
----
-
-### 🐳 Docker Compose
-
-A **Docker Compose** setup is included to simplify the process of starting and stopping all microservices and
-dependencies.
-
-**Usage:**
+# Build and Run
+Build each service locally:
 
 ```bash
-# Start all services
-docker-compose up -d
+cd auth-service && mvn clean install
+cd ../user && mvn clean install
+cd ../product && mvn clean install
+cd ../cart && mvn clean install
+cd ../order && mvn clean install
+cd ../api-gateway && mvn clean install
+cd ../config-server && mvn clean install
+cd ../eureka-server && mvn clean install
+```
 
-# Stop all services
+Start all services and dependencies with Docker:
+
+```bash
+docker-compose up -d
+```
+
+Stop and remove containers:
+
+```bash
 docker-compose down
+```
+
+# Environment Variables
+| Variable | Required | Description |
+|---|---|---|
+| `JWT_SECRET` | Yes | Shared JWT signing key used by `auth-service` and `api-gateway` |
+| `DB_PASSWORD` | Yes | Database password used by service datasources |
+| `DB_USERNAME` | Yes | Database username used by service datasources |
+| `REDIS_HOST` | No (default: `localhost`) | Redis host for cache/auth/rate-limit state |
+| `KAFKA_HOST` | No (default: `localhost`) | Kafka bootstrap host for event messaging |
+
+Use `.env.example` as the template for your local `.env`.
+
+# Tech Stack
+- Spring Boot
+- Spring Cloud
+- Spring Security
+- Apache Kafka
+- Redis
+- Docker / Docker Compose
+- Netflix Eureka
+- Spring Cloud Gateway
